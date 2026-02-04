@@ -1,0 +1,33 @@
+id: httpx-url-quoting
+title: "Fix query parameter percent-encoding"
+repo: encode/httpx
+difficulty: easy
+time_limit: 30
+description: |
+  When constructing URLs with query parameters in httpx, percent-encoding
+  behavior is inconsistent between `params={}` and `url={}`.
+
+  **Expected behavior:**
+  - `params={}` should always percent-encode values (matching browser form behavior)
+  - `url={}` should percent-encode while preserving existing escape sequences (matching browser URL bar behavior)
+
+  **Actual behavior:**
+  Some special characters in query parameters are not being properly
+  percent-encoded, leading to malformed URLs.
+
+  Your task: Fix the URL parsing/quoting logic to ensure consistent
+  percent-encoding behavior.
+
+  Related issues: #3135, #3140
+setup:
+  base_commit: "be56b747350008b7b0456242691919f9086c0f32"
+  solution_commit: "a7092af2fda78d92daaad7627e4cf0cf5e94b019"
+  test_command: "python -m pytest tests/models/test_url.py -x -q"
+  files_of_interest:
+    - httpx/_urlparse.py
+    - tests/models/test_url.py
+tags: [url-parsing, bug-fix, encoding]
+hints:
+  - "Look at the _urlparse.py module — how are query parameters being quoted?"
+  - "Compare how params={} and url='...' handle existing percent-encoded sequences differently"
+  - "The fix involves ensuring PERCENT_ENCODED_SPECIAL_CHARACTERS are handled correctly in the quoting functions"

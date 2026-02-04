@@ -1,0 +1,37 @@
+id: flask-binary-io
+title: "Fix send_file type annotation for wider IO compatibility"
+repo: pallets/flask
+difficulty: easy
+time_limit: 20
+description: |
+  The `flask.helpers.send_file` function uses `t.BinaryIO` as the type
+  annotation for file-like objects. However, this type is too restrictive.
+
+  **The Problem:**
+  Some valid file-like objects that implement `IO[bytes]` are not accepted
+  by type checkers when passed to `send_file`, because they don't strictly
+  match `BinaryIO` (which is a more specific protocol).
+
+  **Expected behavior:**
+  `send_file` should accept any `IO[bytes]` compatible object, not just
+  strict `BinaryIO` instances.
+
+  **Actual behavior:**
+  Type checkers flag valid file-like objects as incompatible with
+  `send_file`'s parameter type.
+
+  Your task: Update the type annotation to use the more permissive
+  `IO[bytes]` type instead of `BinaryIO`.
+
+  Related issue: #5776
+setup:
+  base_commit: "c56c5ec7c41e6ffd02516bf7cb80dd2ba9ba7aa3"
+  solution_commit: "1dfd7cd5555d9e62a2e198a131c366242e724b35"
+  test_command: ""
+  files_of_interest:
+    - src/flask/helpers.py
+    - CHANGES.rst
+tags: [type-annotation, typing, easy-fix]
+hints:
+  - "Look at the send_file function signature in helpers.py"
+  - "Change t.BinaryIO to t.IO[bytes] — they're similar but IO[bytes] is more permissive"

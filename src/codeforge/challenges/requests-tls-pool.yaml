@@ -1,0 +1,38 @@
+id: requests-tls-pool
+title: "Fix TLS verification bypass via connection pool reuse"
+repo: psf/requests
+difficulty: medium
+time_limit: 45
+description: |
+  There is a security-related bug in the requests library's connection
+  pool management.
+
+  **The Problem:**
+  When a user makes a request with `verify=False` and then makes another
+  request to the same host expecting TLS verification to be enabled,
+  the library may reuse the previous unverified connection from the pool.
+
+  **Expected behavior:**
+  Each request should use a connection pool that matches its TLS settings.
+  A `verify=False` request should NOT share a pool with `verify=True` requests.
+
+  **Actual behavior:**
+  Connections with different TLS verification settings can be mixed
+  in the same pool, potentially bypassing certificate verification.
+
+  Your task: Fix the connection pool selection to account for TLS
+  verification settings.
+
+  This is a real security fix from the requests library.
+setup:
+  base_commit: "eea3bbf9ac635f465ee6c9903dc57c677952dafd"
+  solution_commit: "a58d7f2ffb4d00b46dca2d70a3932a0b37e22fac"
+  test_command: "python -m pytest tests/test_requests.py -x -q -k 'test_tls or test_verify'"
+  files_of_interest:
+    - src/requests/adapters.py
+    - tests/test_requests.py
+tags: [security, tls, connection-pool, bug-fix]
+hints:
+  - "Look at how HTTPAdapter selects or creates connection pools (the send() method)"
+  - "The pool key needs to include TLS verification parameters to distinguish pools"
+  - "Check how urllib3 PoolManager handles pool_connections_key — you may need to customize pool key creation"
