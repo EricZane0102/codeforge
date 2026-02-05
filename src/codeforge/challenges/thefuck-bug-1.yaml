@@ -1,0 +1,31 @@
+id: thefuck-bug-1
+title: "pip unknown command 纠错规则的正则表达式匹配范围过窄"
+repo: nvbn/thefuck
+difficulty: easy
+time_limit: 15
+description: |
+  thefuck 是一个 CLI 纠错工具，当你输入错误的命令时，它会建议正确的命令。
+
+  其中有一条 rule 专门处理 pip 的 "unknown command" 错误。当 pip 输出类似
+  `ERROR: unknown command "isntall", maybe you meant "install"` 时，
+  这条 rule 会从错误信息中提取拼错的命令和建议的命令，然后自动纠正。
+
+  **问题现象：**
+  当 pip 报出的 unknown command 包含大写字母、数字或连字符时（例如
+  `ERROR: unknown command "Install"` 或 `ERROR: unknown command "un-install"`），
+  这条 rule 无法正确提取命令名，导致纠错失败。只有纯小写字母组成的命令名能被正确识别。
+
+  **期望行为：**
+  无论 unknown command 中的命令名包含什么字符，只要它出现在引号之间，
+  rule 都应该能正确提取并进行纠正。
+setup:
+  base_commit: "2ced7a7f33ae0bec3ffc7a43ce95330bdf6cfcb9"
+  solution_commit: "444908ce1c17767ef4aaf9e0b4950497914f7f63"
+  test_command: "pytest tests/rules/test_pip_unknown_command.py::test_get_new_command"
+  files_of_interest:
+    - thefuck/rules/pip_unknown_command.py
+tags: [regex, character-class, edge-case]
+hints:
+  - "查看 pip_unknown_command.py 中的 get_new_command 函数，特别是正则表达式部分"
+  - "正则中的 character class [a-z]+ 只匹配纯小写字母——想想还有哪些字符可能出现在命令名里"
+  - "与其列举所有可能的字符，不如用一个「匹配引号之间所有内容」的模式"

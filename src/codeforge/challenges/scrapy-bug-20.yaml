@@ -1,0 +1,31 @@
+id: scrapy-bug-20
+title: "SitemapSpider 解析 robots.txt 时 bytes/str 类型不匹配"
+repo: scrapy/scrapy
+difficulty: easy
+time_limit: 15
+description: |
+  Scrapy 的 `SitemapSpider` 会自动解析网站的 sitemap。它的工作流程是：
+  先请求 robots.txt，从中提取 sitemap URL，然后逐一请求这些 sitemap。
+
+  解析 robots.txt 时，它调用 `sitemap_urls_from_robots()` 函数来提取
+  `Sitemap:` 指令后面的 URL。
+
+  **问题现象：**
+  `SitemapSpider` 在解析 robots.txt 时失败，无法正确提取其中的 sitemap URL。
+  `sitemap_urls_from_robots()` 函数期望接收 `str` 类型的输入，但实际传入的
+  是 `bytes` 类型，导致字符串匹配逻辑无法工作。
+
+  **期望行为：**
+  `_parse_sitemap` 方法应该将 response 的内容以正确的类型（文本字符串）
+  传递给 `sitemap_urls_from_robots()` 函数，确保文本处理逻辑正常工作。
+setup:
+  base_commit: "e328a9b9dfa4fbc79c59ed4f45f757e998301c31"
+  solution_commit: "25c56159b86288311630cc0cf6db9d755aeeff1e"
+  test_command: "python -m unittest -q tests.test_spider.SitemapSpiderTest.test_get_sitemap_urls_from_robotstxt"
+  files_of_interest:
+    - scrapy/spiders/sitemap.py
+tags: [bytes-str, encoding, type-error]
+hints:
+  - "查看 scrapy/spiders/sitemap.py 中 _parse_sitemap 方法里处理 robots.txt 的分支"
+  - "Scrapy Response 对象有两个属性用于获取内容：.body 返回 bytes，.text 返回 str"
+  - "sitemap_urls_from_robots() 进行的是文本级别的字符串匹配，需要接收 str 而非 bytes"

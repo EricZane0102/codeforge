@@ -1,0 +1,30 @@
+id: scrapy-bug-4
+title: "Spider contract errback 中 exc_info 元组顺序错误"
+repo: scrapy/scrapy
+difficulty: easy
+time_limit: 15
+description: |
+  Scrapy 的 contract 系统用于对 spider 回调函数进行自动化测试。在 `ContractsManager`
+  中，当请求的 errback 被触发时（即请求处理失败），代码会将失败信息包装成标准的
+  `exc_info` 元组，然后传递给 `TestResult.addError()` 来记录测试错误。
+
+  **问题现象：**
+  当 spider contract 的 errback 被触发时，测试结果记录的异常信息格式不正确。
+  这可能导致测试报告无法正确显示 traceback 信息，或者在某些测试框架中引发
+  二次异常。
+
+  **期望行为：**
+  Python 标准的 `exc_info` 元组格式是 `(type, value, traceback)` —— 即
+  **异常类型在前，异常实例在后**。代码应该严格遵循这个顺序，确保与标准
+  `sys.exc_info()` 返回值的格式一致。
+setup:
+  base_commit: "c8f3d07e86dd41074971b5423fb932c2eda6db1e"
+  solution_commit: "16dad81715d3970149c0cf7a318e73a0d84be1ff"
+  test_command: "python -m unittest -q tests.test_contracts.ContractsManagerTest.test_errback"
+  files_of_interest:
+    - scrapy/contracts/__init__.py
+tags: [tuple-order, api-convention, exception-handling]
+hints:
+  - "查看 scrapy/contracts/__init__.py 中的 eb_wrapper 函数"
+  - "注意 exc_info 元组中各元素的顺序——Python 标准是 (type, value, traceback)"
+  - "Twisted Failure 对象的 .type 和 .value 属性分别对应异常类和异常实例，检查它们在元组中的位置"

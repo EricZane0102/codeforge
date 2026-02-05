@@ -1,0 +1,36 @@
+id: fastapi-bug-16
+title: "jsonable_encoder 在 BaseModel 没有 json_encoders 配置时丢弃外部传入的 custom_encoder"
+repo: tiangolo/fastapi
+difficulty: medium
+time_limit: 30
+description: |
+  FastAPI 的 `jsonable_encoder` 是一个核心工具函数，负责将 Python 对象转换为
+  JSON 兼容格式。它支持两种自定义编码器来源：
+  1. Pydantic model 自身 Config 中的 `json_encoders`
+  2. 调用者传入的 `custom_encoder` 参数
+
+  **问题现象：**
+  当一个 Pydantic BaseModel 对象的 Config 中 **没有定义** `json_encoders`
+  属性时（这是大多数 model 的默认情况），`jsonable_encoder` 会完全忽略调用者
+  通过 `custom_encoder` 参数传入的自定义编码器。这意味着即使你显式地传入了
+  `custom_encoder={datetime: str}`，它也不会生效。
+
+  另外，当 model 的 Config 没有 `json_encoders` 属性时（而不仅仅是为空 dict），
+  代码直接访问 `obj.Config.json_encoders` 会抛出 `AttributeError`。
+
+  **期望行为：**
+  - 当 model 有自己的 `json_encoders` 时，使用 model 的编码器
+  - 当 model 没有 `json_encoders` 时，应该 fallback 到调用者传入的
+    `custom_encoder`，而不是直接丢弃
+  - 访问 Config 属性时应该使用安全的方式，避免 AttributeError
+setup:
+  base_commit: "92c825be6a7362099400c9c3fe8b01ea13add3dc"
+  solution_commit: "9745a5d1ae86a7fefacf79bdde8e5dd2d59fa2f4"
+  test_command: "pytest tests/test_jsonable_encoder.py::test_encode_model_with_config"
+  files_of_interest:
+    - fastapi/encoders.py
+tags: [encoder, getattr, fallback-logic, pydantic]
+hints:
+  - "查看 fastapi/encoders.py 中 jsonable_encoder 函数处理 BaseModel 类型的分支"
+  - "当前代码对有无 json_encoders 做了 if/else 分支，但 else 分支完全没用到 custom_encoder 参数"
+  - "用 getattr(obj.Config, 'json_encoders', custom_encoder) 可以安全地获取属性并提供 fallback 值"

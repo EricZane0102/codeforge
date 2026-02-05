@@ -1,0 +1,35 @@
+id: scrapy-bug-40
+title: "PythonItemExporter 对非字符串类型值强制编码导致数据丢失"
+repo: scrapy/scrapy
+difficulty: medium
+time_limit: 30
+description: |
+  Scrapy 的 `PythonItemExporter` 用于将爬取的 Item 序列化为 Python 原生类型
+  （dict/list/str/bytes）。它的 `_serialize_value` 方法负责递归地将 Item 中的
+  每个值转换为合适的类型。
+
+  对于 dict 和 list 类型的值，它会递归处理。对于其他值，它会根据配置将其转换为
+  bytes 或 unicode 字符串。
+
+  **问题现象：**
+  当 Item 中包含非字符串类型的值（如 `int`、`float`、`bool`）时，
+  `_serialize_value` 会尝试用 `to_bytes()` 或 `to_unicode()` 对其进行编码转换。
+  这些函数期望输入是字符串或 bytes，传入 `int` 等类型会导致异常或意外行为。
+
+  例如，一个 Item 包含 `{"price": 99, "in_stock": True}` 时，导出会失败，
+  因为 `99` 和 `True` 不是字符串类型。
+
+  **期望行为：**
+  `_serialize_value` 应该只对字符串和 bytes 类型的值进行编码转换。对于
+  `int`、`float`、`bool` 等其他 Python 原生类型，应该原样保留，不做转换。
+setup:
+  base_commit: "7d24df37380cd5a5b7394cd2534e240bd2eff0ca"
+  solution_commit: "f1d971a5c0cdfe0f4fe5619146cd6818324fc98e"
+  test_command: "python -m unittest -q tests.test_exporters.PythonItemExporterTest.test_other_python_types_item"
+  files_of_interest:
+    - scrapy/exporters.py
+tags: [type-checking, serialization, isinstance]
+hints:
+  - "查看 scrapy/exporters.py 中 PythonItemExporter._serialize_value 方法的最后几行"
+  - "当前代码对所有非 dict/list 的值都执行了字符串编码操作，但 int/float/bool 不需要编码"
+  - "在调用 to_bytes/to_unicode 之前，加一个 isinstance 检查，只对实际的字符串/bytes 类型执行编码"

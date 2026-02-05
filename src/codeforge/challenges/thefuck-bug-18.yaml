@@ -1,0 +1,29 @@
+id: thefuck-bug-18
+title: "sudo 规则对已有 sudo 前缀的命令重复添加 sudo"
+repo: nvbn/thefuck
+difficulty: easy
+time_limit: 15
+description: |
+  thefuck 有一条 `sudo` 规则：当命令因权限不足失败时（出现 "permission denied"
+  等错误），自动在命令前面加上 `sudo` 重试。
+
+  **问题现象：**
+  如果用户执行的命令本身已经带有 `sudo` 前缀（比如 `sudo apt-get install foo`），
+  但因为其他原因产生了包含 "permission denied" 的输出，这条规则仍然会匹配并建议
+  `sudo sudo apt-get install foo`。这显然是错误的——不应该在已有 sudo 的命令上
+  再加一层 sudo。
+
+  **期望行为：**
+  当命令已经以 `sudo` 开头时，这条规则应该不匹配（返回 False），避免产生
+  双重 sudo 的建议。
+setup:
+  base_commit: "b65a9a0a4fd9bef394b45a1d367d29aa1e1c403e"
+  solution_commit: "c3b1ba763708b8faaaf55717c436c4cd4c57a7ea"
+  test_command: "pytest tests/rules/test_sudo.py::test_not_match"
+  files_of_interest:
+    - thefuck/rules/sudo.py
+tags: [edge-case, guard-clause, logic-error]
+hints:
+  - "查看 sudo.py 中的 match 函数，看看它目前的匹配逻辑是什么"
+  - "在遍历 patterns 之前，应该先检查一个前提条件——命令是否已经使用了 sudo"
+  - "可以通过 command.script_parts 来获取命令的第一个 token，判断它是否为 'sudo'"

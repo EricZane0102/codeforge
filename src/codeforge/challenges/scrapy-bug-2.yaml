@@ -1,0 +1,32 @@
+id: scrapy-bug-2
+title: "LocalCache 在无容量限制时 __setitem__ 崩溃"
+repo: scrapy/scrapy
+difficulty: easy
+time_limit: 15
+description: |
+  Scrapy 的工具模块中有一个 `LocalCache` 类，继承自 `collections.OrderedDict`，
+  用作带容量上限的 LRU 缓存。构造时可以传入 `limit` 参数指定最大容量。
+
+  当缓存满时，`__setitem__` 会循环弹出最旧的元素，直到腾出空间。
+
+  **问题现象：**
+  当 `LocalCache` 以 `limit=None`（或不传 limit，即无容量限制）创建时，
+  向其中插入任何元素都会导致异常。在 Python 3 中，`len(self) >= None` 会抛出
+  `TypeError: '>=' not supported between instances of 'int' and 'NoneType'`。
+  在 Python 2 中则更糟——这个比较永远为 True（因为 int < NoneType 的历史行为），
+  导致死循环不断弹出元素。
+
+  **期望行为：**
+  当 `limit` 为 None 或 0（表示不限制容量）时，`__setitem__` 应该跳过容量检查，
+  直接插入元素，像普通 OrderedDict 一样工作。
+setup:
+  base_commit: "f02c3d1dcf3e4880388d19e961e7911be5dc54ff"
+  solution_commit: "439a3e59b8e858441f8d97dbc32f398db392330d"
+  test_command: "python -m unittest -q tests.test_utils_datatypes.LocalCacheTest.test_cache_without_limit"
+  files_of_interest:
+    - scrapy/utils/datatypes.py
+tags: [null-handling, guard-clause, edge-case]
+hints:
+  - "查看 scrapy/utils/datatypes.py 中 LocalCache 类的 __setitem__ 方法"
+  - "问题在于代码直接用 self.limit 做数值比较，但没有考虑 limit 可能为 None 的情况"
+  - "在执行 while 循环之前，先检查 self.limit 是否为 truthy 值"

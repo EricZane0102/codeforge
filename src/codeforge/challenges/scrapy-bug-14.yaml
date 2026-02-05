@@ -1,0 +1,36 @@
+id: scrapy-bug-14
+title: "gzip 响应检测函数无法识别带额外参数的 Content-Type"
+repo: scrapy/scrapy
+difficulty: medium
+time_limit: 30
+description: |
+  Scrapy 的 `is_gzipped()` 工具函数用于判断 HTTP 响应是否为 gzip 压缩格式，
+  以便决定是否需要解压。它通过检查响应的 `Content-Type` header 来判断。
+
+  **问题现象：**
+  `is_gzipped()` 只能识别 Content-Type 恰好等于 `application/x-gzip` 或
+  `application/gzip` 的响应。但在实际的 HTTP 响应中，Content-Type header
+  常常带有额外的参数，例如：
+  - `application/gzip; charset=utf-8`
+  - `application/x-gzip; name=data.gz`
+  - `Application/Gzip`（大小写不同）
+
+  这些都是合法的 gzip Content-Type，但当前的精确字符串匹配无法识别它们，
+  导致 gzip 压缩的响应未被正确解压。
+
+  **期望行为：**
+  `is_gzipped()` 应该能正确识别所有合法的 gzip Content-Type 变体，包括：
+  - 带有额外参数（如 charset）的情况
+  - 大小写不同的情况
+  - `application/gzip` 和 `application/x-gzip` 两种前缀
+setup:
+  base_commit: "b7553d921afe356ec858bb1d2e5b1702df05ea24"
+  solution_commit: "d43a35735a062a4260b002cfbcd3236c77ef9399"
+  test_command: "python -m unittest -q tests.test_utils_gz.GunzipTest.test_is_gzipped_case_insensitive && python -m unittest -q tests.test_utils_gz.GunzipTest.test_is_gzipped_with_charset"
+  files_of_interest:
+    - scrapy/utils/gz.py
+tags: [content-type, regex, string-matching, http]
+hints:
+  - "查看 scrapy/utils/gz.py 中的 is_gzipped 函数，看看它当前是如何检查 Content-Type 的"
+  - "精确的字符串相等比较 (`in (a, b)`) 无法处理带参数和大小写变化的 Content-Type。需要更灵活的匹配方式"
+  - "考虑使用正则表达式，匹配以 application/(x-)?gzip 开头的 Content-Type，并使用 re.I 忽略大小写"

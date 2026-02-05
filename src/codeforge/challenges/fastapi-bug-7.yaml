@@ -1,0 +1,34 @@
+id: fastapi-bug-7
+title: "请求验证错误的响应体包含不可 JSON 序列化的对象"
+repo: tiangolo/fastapi
+difficulty: easy
+time_limit: 20
+description: |
+  FastAPI 内置了一个 `request_validation_exception_handler`，当请求数据
+  不符合 Pydantic model 的验证规则时，会返回 422 状态码和包含错误详情的
+  JSON 响应。
+
+  错误详情来自 Pydantic 的 `ValidationError.errors()` 方法，它返回一个
+  包含错误信息的 list of dicts。
+
+  **问题现象：**
+  当验证错误中包含非标准 JSON 类型的对象时（例如 Pydantic 的某些内部类型、
+  bytes 对象、或自定义类实例），直接将 `exc.errors()` 放入 `JSONResponse`
+  的 `content` 中会导致序列化失败，因为 Python 标准的 `json.dumps` 无法
+  处理这些类型。最终用户收到的不是友好的 422 错误详情，而是 500 内部错误。
+
+  **期望行为：**
+  在构建错误响应之前，应该对 `exc.errors()` 的内容进行 JSON 兼容的序列化
+  处理，确保所有非标准类型都被转换为可 JSON 序列化的形式，使 422 响应始终
+  能正确返回给客户端。
+setup:
+  base_commit: "cc4c13e4ae3f65fc76c23962b316df4a60e0c7e0"
+  solution_commit: "19c77e35bdde33aeec1eb2cfa680f95016492b69"
+  test_command: "pytest tests/test_multi_body_errors.py::test_jsonable_encoder_requiring_error"
+  files_of_interest:
+    - fastapi/exception_handlers.py
+tags: [json-serialization, error-handling, encoder]
+hints:
+  - "查看 fastapi/exception_handlers.py 中的 request_validation_exception_handler 函数"
+  - "FastAPI 自己有一个工具函数专门用来把 Python 对象转换为 JSON 兼容格式——jsonable_encoder"
+  - "在将 exc.errors() 传入 JSONResponse 之前，先用 jsonable_encoder 包装一下"

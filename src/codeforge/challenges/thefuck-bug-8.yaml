@@ -1,0 +1,33 @@
+id: thefuck-bug-8
+title: "dnf 命令纠错在 Python 3 下因 bytes/str 混用而失败"
+repo: nvbn/thefuck
+difficulty: medium
+time_limit: 30
+description: |
+  thefuck 有一条处理 `dnf` 包管理器 "No such command" 错误的 rule。当用户输入了
+  错误的 dnf 子命令时，它会调用 `dnf --help` 获取所有合法的操作名称，然后用
+  difflib 找到最接近的正确命令来纠正。
+
+  这条 rule 在 Python 2 下工作正常，但迁移到 Python 3 后出了问题。
+
+  **问题现象：**
+  在 Python 3 环境下，`get_new_command` 无法正确提取 dnf 的合法操作列表。
+  `_get_operations()` 函数返回的是 bytes 对象列表而非 str 列表，导致后续的
+  字符串比较和 difflib 匹配全部失败。具体来说，正则表达式使用了 bytes pattern
+  (`b'^...'`)，而 subprocess 输出在 Python 3 中是 bytes，但下游期望 str。
+
+  **期望行为：**
+  `_get_operations()` 应该返回 str 列表（而非 bytes 列表），使得整个处理流程
+  在 Python 3 下能正确工作。问题涉及两个相关联的点：正则表达式的类型和
+  subprocess 输出的解码。
+setup:
+  base_commit: "449cb9a00693c8b4d97d5fda8d732cf0978e117e"
+  solution_commit: "be48f027847161f907def8987706041c65a1fd58"
+  test_command: "pytest tests/rules/test_dnf_no_such_command.py::test_get_new_command && pytest tests/rules/test_dnf_no_such_command.py::test_get_operations"
+  files_of_interest:
+    - thefuck/rules/dnf_no_such_command.py
+tags: [encoding, bytes-str, python3-migration, subprocess]
+hints:
+  - "查看 dnf_no_such_command.py 中的 _parse_operations 和 _get_operations 两个函数"
+  - "注意 subprocess.Popen.stdout.read() 在 Python 3 中返回 bytes，而后续代码期望处理 str"
+  - "需要同时处理两个问题：将 subprocess 输出 decode 为 str，并将正则表达式从 bytes pattern 改为 str pattern"

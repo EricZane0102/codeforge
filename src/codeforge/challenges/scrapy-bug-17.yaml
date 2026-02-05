@@ -1,0 +1,32 @@
+id: scrapy-bug-17
+title: "未知 HTTP 状态码导致 response_status_message 崩溃"
+repo: scrapy/scrapy
+difficulty: easy
+time_limit: 15
+description: |
+  Scrapy 的工具函数 `response_status_message()` 负责将 HTTP 状态码转换为
+  人类可读的消息，例如 `200 OK`、`404 Not Found`。
+
+  它通过查找 Python 标准库 `http.client.responses` 字典来获取状态码对应的
+  描述文本。
+
+  **问题现象：**
+  当遇到非标准的 HTTP 状态码（例如某些服务器返回的自定义状态码 `520`、`599` 等，
+  或者一些罕见但合法的状态码），`response_status_message()` 会抛出 TypeError。
+  这是因为字典查找返回了 `None`（键不存在时的默认值），而后续代码尝试对 `None`
+  进行字符串操作。
+
+  **期望行为：**
+  对于标准库中没有记录的状态码，函数应该优雅地返回一个合理的默认描述
+  （如 "Unknown Status"），而不是崩溃。
+setup:
+  base_commit: "ebef6d7c6dd8922210db8a4a44f48fe27ee0cd16"
+  solution_commit: "65c7c05060fd2d1fc161d4904243d5e0b31e202b"
+  test_command: "python -m unittest -q tests.test_utils_response.ResponseUtilsTest.test_response_status_message"
+  files_of_interest:
+    - scrapy/utils/response.py
+tags: [null-handling, dict-default, defensive-programming]
+hints:
+  - "查看 scrapy/utils/response.py 中的 response_status_message 函数"
+  - "dict.get() 的第二个参数是 key 不存在时的默认值——当前代码没有提供这个默认值"
+  - "为 http.RESPONSES.get() 添加一个合理的 fallback 字符串"

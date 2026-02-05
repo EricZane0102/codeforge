@@ -1,0 +1,33 @@
+id: scrapy-bug-32
+title: "CrawlerProcess 构造函数使用原始 settings 参数而非规范化后的 self.settings"
+repo: scrapy/scrapy
+difficulty: easy
+time_limit: 20
+description: |
+  Scrapy 的 `CrawlerProcess` 继承自 `CrawlerRunner`。父类 `CrawlerRunner.__init__`
+  接收一个 settings 参数，可以是 dict 或 Settings 对象，并将其规范化为 Settings
+  对象后存储在 `self.settings` 中。
+
+  子类 `CrawlerProcess.__init__` 调用 `super().__init__(settings)` 后，还会
+  额外调用 `configure_logging()` 和 `log_scrapy_info()` 两个函数来配置日志。
+
+  **问题现象：**
+  当用户以 dict 格式传入 settings（例如 `CrawlerProcess({'LOG_LEVEL': 'INFO'})`）
+  时，`configure_logging()` 和 `log_scrapy_info()` 收到的是原始的 dict 对象，
+  而不是父类已经规范化好的 Settings 对象。这些函数期望接收的是 Settings 对象
+  （它提供了 `.get()`、`.getbool()` 等方法），传入 dict 会导致属性访问失败。
+
+  **期望行为：**
+  `CrawlerProcess.__init__` 中调用日志配置函数时，应该使用父类已经规范化后的
+  `self.settings`，而不是构造函数接收的原始参数 `settings`。
+setup:
+  base_commit: "342cb622f1ea93268477da557099010bbd72529a"
+  solution_commit: "aa6a72707daabfb6217f52e4774f2ff038f83dcc"
+  test_command: "python -m unittest -q tests.test_crawler.CrawlerProcessTest.test_crawler_process_accepts_dict"
+  files_of_interest:
+    - scrapy/crawler.py
+tags: [inheritance, variable-shadowing, initialization]
+hints:
+  - "查看 scrapy/crawler.py 中 CrawlerProcess.__init__ 方法"
+  - "注意参数名 settings 和属性名 self.settings 的区别——super().__init__() 已经对 settings 进行了规范化并存到了 self.settings"
+  - "configure_logging 和 log_scrapy_info 应该用 self.settings 而非局部参数 settings"

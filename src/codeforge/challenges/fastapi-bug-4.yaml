@@ -1,0 +1,32 @@
+id: fastapi-bug-4
+title: "OpenAPI schema 中出现重复的 path parameter"
+repo: tiangolo/fastapi
+difficulty: medium
+time_limit: 30
+description: |
+  FastAPI 会自动生成 OpenAPI（Swagger）schema。当一个路由的 path parameter
+  同时出现在路径定义和依赖注入（dependency）中时，schema 生成逻辑会出错。
+
+  例如，假设你有一个路由 `/items/{item_id}`，并且 `item_id` 同时是 path parameter
+  和某个 dependency 函数的参数。FastAPI 会分别从路径解析和依赖解析中各收集一次
+  这个 parameter。
+
+  **问题现象：**
+  生成的 OpenAPI schema 中，同一个 path parameter（如 `item_id`）出现了两次。
+  这导致 Swagger UI 等工具出现异常显示，也不符合 OpenAPI 规范（同名 parameter
+  不应重复出现）。
+
+  **期望行为：**
+  当同一个 parameter 被多次收集时（例如既来自路径又来自依赖），最终输出的
+  OpenAPI schema 中应该只保留一份，进行去重处理。
+setup:
+  base_commit: "7ccd81f70653857bd8f3a15ee946aa3fb0edc2cb"
+  solution_commit: "74c4d1c1dbe6bfdb05d6e4fc767ffe062398f0a3"
+  test_command: "pytest tests/test_param_in_path_and_dependency.py::test_reused_param"
+  files_of_interest:
+    - fastapi/openapi/utils.py
+tags: [deduplication, openapi, dict-comprehension]
+hints:
+  - "查看 fastapi/openapi/utils.py 中 get_openapi_path 函数里组装 parameters 列表的逻辑"
+  - "parameters 列表中的元素是 dict，每个都有 'name' 字段。当 name 重复时应该去重"
+  - "可以利用 dict comprehension 以 param['name'] 为 key 实现去重，后出现的同名 param 覆盖前者"
