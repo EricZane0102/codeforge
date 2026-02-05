@@ -153,8 +153,9 @@ def validate_journal(path: Path) -> tuple[bool, str]:
         )
 
     # Check if at least some template markers have been replaced
+    # Only reject if ALL markers remain AND real content is thin
     remaining_markers = sum(1 for m in TEMPLATE_MARKERS if m in content)
-    if remaining_markers >= len(TEMPLATE_MARKERS):
+    if remaining_markers >= len(TEMPLATE_MARKERS) and len(real_text) < MIN_CONTENT_LENGTH * 2:
         return False, (
             "思考日志看起来还是模板状态，没有实质内容。\n"
             "请运行 [bold]forge think[/bold] 填写你的分析和思路。"
