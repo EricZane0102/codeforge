@@ -75,7 +75,15 @@ forge config api_model claude-sonnet-4-20250514
 forge config api_provider openai
 forge config api_key sk-xxxxx
 forge config api_model gpt-4o
+
+# OpenRouter（统一接入多家模型）
+forge config api_provider openrouter
+forge config api_key sk-or-xxxxx
+forge config api_model anthropic/claude-sonnet-4   # 或 openai/gpt-4o 等
 ```
+
+OpenRouter 支持 200+ 模型，通过统一 API 访问 Anthropic、OpenAI、Google 等多家供应商。
+注册获取 key: https://openrouter.ai/keys
 
 没配 API key 也能用！`forge review` 会生成格式化文本，你可以复制粘贴给任意 AI 助手评判。
 

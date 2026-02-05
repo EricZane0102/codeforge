@@ -140,7 +140,7 @@ def _api_review(
         challenge: The challenge.
         session: The session data.
         journal: Journal content.
-        provider: API provider ("anthropic" or "openai").
+        provider: API provider ("anthropic", "openai", or "openrouter").
         api_key: API key.
         model: Model name (optional).
 
@@ -163,8 +163,10 @@ def _api_review(
             return _call_anthropic(prompt, api_key, model or "claude-sonnet-4-20250514")
         elif provider == "openai":
             return _call_openai(prompt, api_key, model or "gpt-4o")
+        elif provider == "openrouter":
+            return _call_openrouter(prompt, api_key, model or "anthropic/claude-sonnet-4")
         else:
-            console.print(f"[red]❌ 不支持的 API 提供商: {provider}[/red]")
+            console.print(f"[red]❌ 不支持的 API 提供商: {provider}。支持: anthropic, openai, openrouter[/red]")
             return None
     except ImportError:
         console.print("[red]❌ httpx 未安装。[/red]")
@@ -232,6 +234,43 @@ def _call_openai(prompt: str, api_key: str, model: str) -> Optional[ReviewScore]
             "max_tokens": 1024,
         },
         timeout=60,
+    )
+    response.raise_for_status()
+    data = response.json()
+    text = data["choices"][0]["message"]["content"]
+    return _parse_review_json(text)
+
+
+def _call_openrouter(prompt: str, api_key: str, model: str) -> Optional[ReviewScore]:
+    """Call OpenRouter API for review.
+
+    OpenRouter provides unified access to multiple LLM providers.
+    Uses OpenAI-compatible API format.
+
+    Args:
+        prompt: The review prompt.
+        api_key: OpenRouter API key.
+        model: Model name (e.g. "anthropic/claude-sonnet-4", "openai/gpt-4o").
+
+    Returns:
+        ReviewScore if successful.
+    """
+    import httpx
+
+    response = httpx.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://github.com/EricZane0102/codeforge",
+            "X-Title": "CodeForge",
+        },
+        json={
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 1024,
+        },
+        timeout=90,
     )
     response.raise_for_status()
     data = response.json()
