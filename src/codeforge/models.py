@@ -130,6 +130,7 @@ class Session:
     user_diff: str = ""
     solution_diff: str = ""
     review: Optional[ReviewScore] = None
+    retro: Optional[dict] = None
 
     def start(self) -> None:
         """Mark session as started."""
@@ -163,6 +164,7 @@ class Session:
             "user_diff": self.user_diff,
             "solution_diff": self.solution_diff,
             "review": self.review.to_dict() if self.review else None,
+            "retro": self.retro,
         }
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
@@ -183,4 +185,5 @@ class Session:
             user_diff=data.get("user_diff", ""),
             solution_diff=data.get("solution_diff", ""),
             review=ReviewScore.from_dict(review_data) if review_data else None,
+            retro=data.get("retro"),
         )

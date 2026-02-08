@@ -113,10 +113,23 @@ def review_challenge(challenge: Challenge, export: bool = False) -> bool:
         if score:
             # Apply hint penalty
             score = _apply_hint_penalty(score, session, challenge)
+
+            # Collect stats before this review for level-up check
+            from .stats import collect_stats
+            old_stats = collect_stats()
+
             session.review = score
             session.status = SessionStatus.REVIEWED
             session.save(sf)
             _display_review(score, challenge, session)
+
+            # Check for level-up
+            from .stats import collect_stats as collect_new, check_level_up, display_level_up
+            new_stats = collect_new()
+            level_up = check_level_up(old_stats, new_stats)
+            if level_up:
+                display_level_up(level_up)
+
             return True
         else:
             console.print("[yellow]⚠ API 评判失败，切换到导出模式。[/yellow]")

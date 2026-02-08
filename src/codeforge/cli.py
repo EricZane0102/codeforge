@@ -269,7 +269,8 @@ def start(
         f"  2. 修改 {ws / 'repo'} 中的代码\n"
         f"  3. [bold]forge submit[/bold]      — 提交你的方案\n"
         f"  4. [bold]forge compare[/bold]     — 对比真实解法\n"
-        f"  5. [bold]forge review[/bold]      — AI 评判\n\n"
+        f"  5. [bold]forge review[/bold]      — AI 评判\n"
+        f"  6. [bold]forge retro[/bold]       — 深度复盘\n\n"
         f"  💡 [bold]forge hint[/bold]        — 需要提示时使用",
         title=f"🔥 {ch.title}",
         border_style="green",
@@ -420,6 +421,45 @@ def review(
         return
 
     review_challenge(ch, export=export)
+
+
+# ─── Retro ─────────────────────────────────────────────────────────
+
+@app.command()
+@_error_handler
+def retro(
+    id: Optional[str] = typer.Option(
+        None, "--id", "-i",
+        help="挑战 ID",
+    ),
+    export: bool = typer.Option(
+        False, "--export", "-e",
+        help="强制使用导出模式（不调用 API）",
+    ),
+) -> None:
+    """深度复盘：分析你的思路偏差、提取知识点、给出行动建议。
+
+    需要在 review 之后使用。生成结构化的学习复盘报告。
+
+    示例:
+        forge retro
+        forge retro --id fastapi-001
+        forge retro --export
+    """
+    from .challenge import get_challenge
+    from .retro import retro_challenge
+
+    challenge_id = id or _find_submitted_challenge()
+    if not challenge_id:
+        console.print("[red]❌ 没有已评审的挑战。请先运行 forge review。[/red]")
+        return
+
+    ch = get_challenge(challenge_id)
+    if ch is None:
+        console.print(f"[red]❌ 未找到挑战: {challenge_id}[/red]")
+        return
+
+    retro_challenge(ch, export=export)
 
 
 # ─── Hint ───────────────────────────────────────────────────────────
